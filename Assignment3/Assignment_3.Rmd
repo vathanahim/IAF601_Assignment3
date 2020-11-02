@@ -1,0 +1,184 @@
+#===================================================================
+# ISM645 / IAF601   Principle of Predictive Analytics
+# Assignment 3      Linear Regression
+# Due Date          November 2, 11:59 pm
+#===================================================================
+
+
+library(tidyverse)
+library(ggplot2)
+
+
+# Import the csv file (Boston_house_prices.csv) and explore it.
+#====================== Write R code HERE ==========================
+
+
+```{r}
+data = read.csv('Boston_house_prices.csv')
+data
+```
+```{r}
+head(data)
+summary(data)
+```
+
+
+
+#===================================================================
+
+
+
+#======= Question 1 (1 Point) =======
+# Q1-1. Spread the data out to multiple columns, with the shop type (Starbucks vs. Dunkin Donuts) being the key column and the number of shops being the value column.
+# Q1-2. Delete observations that contain at least one missing value or invalid value (e.g., negative income).
+
+#====================== Write R code HERE ==========================
+
+```{r}
+q1 = spread(data, shop_type, num_shops)
+q1 = q1 %>% drop_na()
+q1
+```
+
+
+
+
+#===================================================================
+
+
+
+#======= Question 2 (1 Point) =======
+# Q2-1. Create a scatter plot to examine the relationship between house prices and Starbucks.
+# Q2-2. Repeat Q2-1 for Dunkin Donuts.
+
+#====================== Write R code HERE ==========================
+
+
+```{r}
+plot_starbucks = ggplot(q1, aes(x=starbucks, y=house_price_index)) + geom_point()
+plot_starbucks
+```
+
+```{r}
+plot_dunkin = ggplot(q1, aes(x=dunkin_donuts, y=house_price_index)) + geom_point()
+plot_dunkin
+```
+
+
+#===================================================================
+
+
+
+#======= Question 3 (1 Point) =======
+# Q3. Build a linear regression model to predict house prices based on the number of Starbucks and Dunkin Donuts.
+
+#====================== Write R code HERE ==========================
+
+
+```{r}
+regression = lm(house_price_index ~ starbucks+dunkin_donuts, data=q1)
+regression
+summary(regression)
+```
+
+
+
+#===================================================================
+
+
+
+#======= Question 4 (2 Point) =======
+# One might argue that neighborhoods where Starbucks are located are relatively rich. 
+# We want to examine if Starbucks still has a predictive power for house prices, even after controlling for household incomes and population.
+# Q4-1. Create new variables by taking log to median_income and population.
+# Q4-2. Build a linear regression model to predict house prices based on the number of Starbucks and Dunkin Donuts as well as (logarithm of) household incomes and population.
+
+#====================== Write R code HERE ==========================
+
+
+```{r}
+q4 = q1 %>% mutate(log_median_income = log(median_income), log_population = log(population))
+```
+```{r}
+regression = lm(house_price_index ~ starbucks+dunkin_donuts+log_median_income+log_population, data = q4)
+summary(regression)
+```
+
+
+
+
+# Q4-3. Do you think considering median income and population improves the linear regression model? 
+#       Write your opinion briefly by commenting (#).
+
+#considering median income and population does improve the linear regression model because it allows use to consider other factors that may cause an increase in house_price_index. When we considered only coffee shops as variables, we were able to see that there wasn't a strong linear relationship due to the p-value of dunkin_donuts being less than the 0.05 threshold and rather, starbucks was the only predictor variable that indicated an increase in house_price_index. However, after the introduction of these two additional variables, we're able to see other variables that may have strong influence in the increase of house_price_index.
+
+
+#===================================================================
+
+
+
+#======= Question 5 (2 Point) =======
+# The dynamics of house prices might vary across counties.
+# Q5-1. Separate the plot resulting from Question 2 by county.
+# Q5-2. Add the county variable to the previous linear regression model (from Question 4).
+
+#====================== Write R code HERE ==========================
+
+```{r}
+plot_starbucks = ggplot(q1, aes(x=starbucks, y=house_price_index)) + geom_point(aes(color=county))
+plot_starbucks
+```
+```{r}
+plot_dunkin = ggplot(q1, aes(x=dunkin_donuts, y=house_price_index)) + geom_point(aes(color=county))
+plot_dunkin
+```
+```{r}
+regression = lm(house_price_index ~ starbucks+dunkin_donuts+log_median_income+log_population+as.factor(county), data = q4)
+summary(regression)
+```
+
+
+
+
+
+#===================================================================
+
+
+
+#======= Question 6 (2 Point) =======
+# Q6-1. Do you think the coefficients of Starbucks and Dunkin Donuts remain significant after considering the county information? 
+#       Write your opinion briefly by commenting (#).
+
+
+#Based on tbe summary of the regression we can see that Starbucks and Dunkin Donuts are no longer as significant "statistically" after considering county information.
+#This can be seen based on the p-value of the respective variable. Dunking Donuts p-value went from 0.28 (before county information) to 0.58 (after county information). Similary Startbucks p-value went from 0.0468 (before county information) to 0.11 (after county information). This rise in p-value could suggests that Starbucks and Dunkin Donuts are not as significant as variables in comparison to county information in determing the house_price_index. Because house_price_index are more dependent on county information, this is what the summary regression tells us. However, if we look at previous regression before county information is added, we can see that Starbucks and Dunkin Donuts did play a role in influencing house_price_index because other confounding variables weren't analyzed.  
+
+
+
+# Q6-2. Which county, on average, has the most expensive house prices? (note that all counties in this data are in Boston, MA)
+#       Write your opinion briefly by commenting (#).
+
+```{r}
+q6 = q4 %>% group_by(county) %>% summarize_at(vars(house_price_index), funs(mean(.,na.rm=TRUE)))
+q6
+```
+#Based on the data above Norfolk on average seems to have the most expesive house prices.
+
+
+#===================================================================
+
+
+
+#======= Question 7 (1 Point) =======
+# Q7. Based on your analysis, do you agree or disagree that Starbucks is the bellwether of rise in house prices?
+#     Write your opinion briefly by commenting (#).
+
+#====================== Write R code HERE ==========================
+
+
+#I disagree that Starbucks is the bellwether of rise in house prices because once other variables were considered in determining the rise in house_price_index, we were able to determine that startbucks became less "statistically" signicant as a predictor variable. Based on the regression analysis, we were able to see that population, income, and county were more significant variables in determing the house_price_index. As stated in the article "After a Starbucks opens in town, housing prices tend to rise, Harvard study finds", the arrivals of starbucks may indicate an already trending of increase home value to confirm that gentrification is already happening. Because we see a potential variable as a causation to the dependend variable doesn't mean it's the only variable that is affecting it; we must consider other confounding variables as well.   
+
+
+
+#===================================================================
+
